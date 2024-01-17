@@ -1,0 +1,34 @@
+---
+- name: Test AWX build
+  hosts: localhost
+  gather_facts: false
+  become: false
+  collections:
+    - ansible.windows
+  vars:
+    ansible_connection: local
+  tasks:
+    - name: "Add host to inventory"
+      ansible.builtin.add_host:
+        name: '{{ new_host }}:{{ host_port }}'
+        groups: serverlist
+
+- name: This is second play
+  hosts: serverlist
+  gather_facts: no
+  vars:
+    ansible_connection: winrm
+#    ansible_winrm_transport: ntlm
+    ansible_winrm_transport: kerberos
+    ansible_winrm_port: "{{ host_port }}"
+    ansible_winrm_kerberos_delegation: true
+  tasks:
+    - name: "Attempting to connect to {{ new_host }} with username {{ ansible_user }}"
+      debug:
+        msg: "Attempting to connect to {{ new_host }} with username {{ ansible_user }}"
+      delegate_to: 127.0.0.1
+    # need to copy script to server for Windows
+    - name: Install IIS (Web-Server only)
+      ansible.windows.win_feature:
+        name: Web-Server
+        state: present
